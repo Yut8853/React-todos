@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Todos</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    'use strict';
+
+    const TodoItem = ({ todo, onDelete, onToggle }) => (
+      <li>
+        <label>
+          <input 
+            type="checkbox"
+            checked={todo.isCompleted}
+            onChange={() => onToggle(todo.id)}
+          />
+          {todo.title}
+        </label>
+        <button onClick={() => onDelete(todo.id)}>Del</button>
+      </li>
+    );
+
+    const AddTodoForm = ({ onAdd }) => {
+      const [title, setTitle] = React.useState('');
+      const inputRef = React.useRef(null);
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        onAdd(title);
+        setTitle('');
+        inputRef.current.focus();
+      };
+
+      return (
+        <form onSubmit={handleSubmit}>
+          <input 
+            ref={inputRef}
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <button type="submit">Add</button>
+        </form>
+      );
+    };
+
+    const TodoList = ({ todos, onDelete, onToggle }) => (
+      <ul id="todos">
+        {todos.map(todo => (
+          <TodoItem
+            key={todo.id}
+            todo={todo}
+            onDelete={onDelete}
+            onToggle={onToggle}
+          />
+        ))}
+      </ul>
+    );
+
+    const App = () => {
+      const [todos, setTodos] = React.useState(() => 
+        JSON.parse(localStorage.getItem('todos')) || []
+      );
+
+      React.useEffect(() => {
+        localStorage.setItem('todos', JSON.stringify(todos));
+      }, [todos]);
+
+      const addTodo = (title) => {
+        const newTodo = { id: Date.now(), title, isCompleted: false };
+        setTodos(todos.concat(newTodo));
+      };
+
+      const deleteTodo = (id) => {
+        if (confirm('Sure?')) {
+          setTodos(todos.filter(todo => todo.id !== id));
+        }
+      };
+
+      const toggleTodo = (id) => {
+        setTodos(todos.map(todo => 
+          todo.id === id ? { ...todo, isCompleted: !todo.isCompleted } : todo
+        ));
+      };
+
+      const purgeCompleted = () => {
+        if (confirm('Sure?')) {
+          setTodos(todos.filter(todo => !todo.isCompleted));
+        }
+      };
+
+      return (
+        <>
+          <h1>
+            Todos
+            <button onClick={purgeCompleted}>Purge</button>
+          </h1>
+          <TodoList
+            todos={todos}
+            onDelete={deleteTodo}
+            onToggle={toggleTodo}
+          />
+          <AddTodoForm onAdd={addTodo} />
+        </>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
